@@ -1,0 +1,88 @@
+{
+  "generated_at": "2026-10-04T11:56:00.559+00:00",
+  "seed": 90421,
+  "budget": 8,
+  "source_digest": "b5254bca0417b92cb137226da5a3662e33d572567f98cc57549e9b386bb0469c",
+  "environment": {
+    "python": "3.12.14",
+    "platform": "Linux",
+    "machine": "x86_64"
+  },
+  "summary": {
+    "all": {
+      "cases": 44,
+      "exact_diagnoses": 44,
+      "mean_cost": 11.420454545454545,
+      "mean_probes": 15.681818181818182,
+      "median_duration_ms": 2450.718,
+      "budget_violations": 0
+    },
+    "fixed": {
+      "cases": 44,
+      "exact_diagnoses": 44,
+      "mean_cost": 4.431818181818182,
+      "mean_probes": 8.045454545454545,
+      "median_duration_ms": 1482.0475000000001,
+      "budget_violations": 0
+    },
+    "active": {
+      "cases": 44,
+      "exact_diagnoses": 44,
+      "mean_cost": 4.4375,
+      "mean_probes": 8.136363636363637,
+      "median_duration_ms": 1488.1785,
+      "budget_violations": 0
+    }
+  },
+  "repairable_incidents": 29,
+  "verified_recoveries": 29,
+  "recovery_checks": 290,
+  "restart_comparison": [
+    {
+      "case": "fanout-01",
+      "outcome": "failure",
+      "status": 503
+    },
+    {
+      "case": "fanout-02",
+      "outcome": "failure",
+      "status": 503
+    },
+    {
+      "case": "fanout-03",
+      "outcome": "failure",
+      "status": 503
+    },
+    {
+      "case": "chain-01",
+      "outcome": "failure",
+      "status": 503
+    },
+    {
+      "case": "chain-02",
+      "outcome": "failure",
+      "status": 503
+    },
+    {
+      "case": "chain-03",
+      "outcome": "failure",
+      "status": 503
+    },
+    {
+      "case": "diamond-01",
+      "outcome": "failure",
+      "status": 503
+    },
+    {
+      "case": "diamond-02",
+      "outcome": "failure",
+      "status": 503
+    },
+    {
+      "case": "diamond-03",
+      "outcome": "failure",
+      "status": 503
+    }
+  ],
+  "scope": "Own deterministic live-process development fixtures; not a production corpus or RCAEval evaluation"
+}

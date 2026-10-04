@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#142323" />
+    <title>OpsResolve · Incident workbench</title>
+    <link rel="stylesheet" href="/assets/workbench.css" />
+    <script src="/assets/workbench.js" defer></script>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-icon">↗</span
+        ><span>OpsResolve<small>INCIDENT WORKBENCH</small></span>
+      </div>
+      <div class="sidebar-label" data-i18n="targets">应用</div>
+      <div id="targets" class="target-list"></div>
+      <button id="add-target" class="sidebar-add" data-i18n="addTarget">
+        ＋ 检查自己的服务
+      </button>
+      <div id="lab-controls" class="lab-controls hidden">
+        <div class="sidebar-label" data-i18n="realLab">真实故障实验</div>
+        <p data-i18n="labHint">五个服务进程、真实依赖调用与 SQLite 查询。</p>
+        <label for="scenario" data-i18n="scenario">故障场景</label>
+        <select id="scenario"></select>
+        <button id="inject" class="sidebar-action" data-i18n="inject">
+          载入场景
+        </button>
+        <button id="restart" class="sidebar-link" data-i18n="restart">
+          尝试仅重启进程
+        </button>
+      </div>
+      <div class="trace-controls">
+        <div class="sidebar-label" data-i18n="traceTools">调用追踪分析</div>
+        <button id="import-traces" class="sidebar-add" data-i18n="importTraces">
+          导入 OTLP JSON
+        </button>
+        <input
+          id="trace-file"
+          type="file"
+          accept=".json,.jsonl,.ndjson,application/json"
+          class="hidden"
+        />
+        <button
+          id="lab-traces"
+          class="sidebar-link hidden"
+          data-i18n="labTraces"
+        >
+          分析实验的真实调用记录
+        </button>
+      </div>
+      <div class="history-block">
+        <div class="sidebar-label" data-i18n="history">最近的调查</div>
+        <div id="history"></div>
+      </div>
+      <div class="sidebar-foot">
+        <span class="live-dot"></span
+        ><span data-i18n="local">本地运行 · 数据保留在本机</span>
+      </div>
+    </aside>
+    <main>
+      <header class="topbar">
+        <div class="breadcrumb">
+          <span data-i18n="workspace">故障工作台</span><span>/</span
+          ><strong id="target-name">—</strong>
+        </div>
+        <button id="language" class="language">English</button>
+      </header>
+      <section class="intro">
+        <div>
+          <span class="eyebrow" data-i18n="eyebrow"
+            >FROM FAILURE TO VERIFIED RECOVERY</span
+          >
+          <h1 data-i18n="headline">把故障定位到可以验证的改动。</h1>
+          <p data-i18n="intro">
+            检查服务 → 找出原因 → 审阅改动 → 验证恢复。每一步都有真实证据。
+          </p>
+        </div>
+        <div class="investigate-controls">
+          <label for="budget" data-i18n="budget">检查预算</label
+          ><input
+            id="budget"
+            type="number"
+            min="1"
+            max="200"
+            step="0.25"
+            value="8"
+          /><button id="diagnose" class="button primary" data-i18n="diagnose">
+            开始诊断 ↗</button
+          ><button id="cancel" class="button hidden" data-i18n="cancel">
+            停止调查
+          </button>
+        </div>
+      </section>
+      <div id="notice" class="notice">
+        <span class="notice-symbol">i</span><span id="notice-text"></span>
+      </div>
+      <section class="metrics">
+        <div class="metric">
+          <span data-i18n="entry">入口业务请求</span
+          ><strong id="metric-entry">—</strong
+          ><small id="entry-detail" data-i18n="notChecked">等待真实检查</small>
+        </div>
+        <div class="metric">
+          <span data-i18n="causes">最小解释中的故障</span
+          ><strong id="metric-causes">—</strong
+          ><small id="cause-detail" data-i18n="noGuess"
+            >证据不足时保留备选解释</small
+          >
+        </div>
+        <div class="metric">
+          <span data-i18n="probeCost">已使用检查成本</span
+          ><strong id="metric-cost">0 <em>/ 8</em></strong
+          ><small id="cost-detail" data-i18n="costHint"
+            >按信息价值与声明成本选择检查</small
+          >
+        </div>
+        <div class="metric">
+          <span data-i18n="recovery">恢复后的业务检查</span
+          ><strong id="metric-recovery">—</strong
+          ><small id="recovery-detail" data-i18n="recoveryHint"
+            >全部服务检查两轮后才标记恢复</small
+          >
+        </div>
+      </section>
+      <section class="workspace-grid">
+        <div class="card topology-card">
+          <div class="card-heading">
+            <div>
+              <span class="section-number">01</span>
+              <h2 data-i18n="dependencyMap">服务与依赖</h2>
+            </div>
+            <span id="graph-state" class="tag muted" data-i18n="liveChecks"
+              >实时检查</span
+            >
+          </div>
+          <div id="topology" class="topology"></div>
+          <div class="map-legend">
+            <span
+              ><i class="legend-dot good"></i
+              ><span data-i18n="ok">通过</span></span
+            ><span
+              ><i class="legend-dot bad"></i
+              ><span data-i18n="failure">失败</span></span
+            ><span
+              ><i class="legend-dot drift"></i
+              ><span data-i18n="drift">配置偏差</span></span
+            ><span
+              ><i class="legend-dot unknown"></i
+              ><span data-i18n="notChecked">未检查</span></span
+            ><small data-i18n="mapHint">点击服务查看证据</small>
+          </div>
+        </div>
+        <div class="card diagnosis-card">
+          <div class="card-heading">
+            <div>
+              <span class="section-number">02</span>
+              <h2 data-i18n="diagnosis">诊断与下一步</h2>
+            </div>
+            <span id="diagnosis-state" class="tag muted">—</span>
+          </div>
+          <div id="diagnosis-content" class="diagnosis-content"></div>
+          <div class="diagnosis-actions">
+            <button
+              id="apply"
+              class="button primary full"
+              disabled
+              data-i18n="apply"
+            >
+              应用方案并验证恢复</button
+            ><button
+              id="explain"
+              class="button full hidden"
+              data-i18n="explain"
+            >
+              生成 AI 解释</button
+            ><a id="download" class="download hidden" data-i18n="download"
+              >下载事件报告 ↓</a
+            >
+          </div>
+        </div>
+      </section>
+      <section class="card investigation-card">
+        <div class="card-heading investigation-heading">
+          <div class="tabs" role="tablist">
+            <button
+              data-tab="timeline"
+              class="tab selected"
+              data-i18n="timeline"
+            >
+              调查过程</button
+            ><button data-tab="changes" class="tab" data-i18n="changes">
+              具体改动</button
+            ><button data-tab="evidence" class="tab" data-i18n="evidence">
+              原始证据</button
+            ><button data-tab="recovery" class="tab" data-i18n="recoveryTab">
+              恢复验证
+            </button>
+          </div>
+          <span id="incident-id" class="incident-id">—</span>
+        </div>
+        <div id="detail-panel" class="detail-panel"></div>
+      </section>
+      <footer class="page-foot">
+        <span data-i18n="scope"
+          >HTTP 检查与声明的 JSON 配置契约 · 不执行任意 Shell 命令</span
+        ><span>OpsResolve 0.1</span>
+      </footer>
+    </main>
+    <dialog id="target-dialog">
+      <form id="target-form">
+        <div class="dialog-heading">
+          <h2 data-i18n="ownService">检查自己的应用</h2>
+          <button type="button" id="close-dialog" aria-label="Close">×</button>
+        </div>
+        <p data-i18n="setupHint">
+          输入 URL 可以检查单个服务；添加依赖清单可以定位跨服务故障。
+        </p>
+        <label for="new-name" data-i18n="applicationName">应用名称</label
+        ><input
+          id="new-name"
+          value="My application"
+          required
+          maxlength="160"
+        /><label for="new-url">URL</label
+        ><input
+          id="new-url"
+          type="url"
+          placeholder="http://127.0.0.1:3000/health"
+          required
+        />
+        <details>
+          <summary data-i18n="advanced">使用依赖清单（JSON）</summary>
+          <p data-i18n="manifestHint">
+            读取本机配置时，以 opsresolve serve --target target.json
+            添加应用。网页导入的配置文件默认不可读。
+          </p>
+          <textarea
+            id="new-manifest"
+            rows="8"
+            spellcheck="false"
+            placeholder='{"version":1,"name":"My app","entry":"api","services":[{"id":"api","url":"http://localhost:3000"}]}'
+          ></textarea>
+        </details>
+        <button class="button primary full" type="submit" data-i18n="connect">
+          添加并开始使用
+        </button>
+      </form>
+    </dialog>
+    <dialog id="trace-dialog" class="trace-dialog">
+      <div class="dialog-heading">
+        <h2 data-i18n="traceTitle">历史调用追踪</h2>
+        <button id="close-traces" aria-label="Close">×</button>
+      </div>
+      <p data-i18n="traceHint">
+        根据已记录的调用树定位错误起点候选，区分下游错误和传播到入口的错误。
+      </p>
+      <div id="trace-content"></div>
+    </dialog>
+    <div id="toast" role="alert" class="toast hidden"></div>
+  </body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "generated_at": "2026-10-04T11:59:15.328+00:00",
+  "source_digest": "b5254bca0417b92cb137226da5a3662e33d572567f98cc57549e9b386bb0469c",
+  "model": "Qwen3-4B-Instruct-2507",
+  "cases": 18,
+  "accepted_explanations": 13,
+  "rejected_explanations": 5,
+  "scope": "Model receives algorithm-derived faults. Acceptance checks identifiers and exact evidence references, not semantic truth of prose or model-only diagnosis accuracy."
+}

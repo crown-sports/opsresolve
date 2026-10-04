@@ -1,0 +1,6 @@
+include README.md README.zh-CN.md LICENSE CONTRIBUTING.md
+recursive-include docs *.md *.json *.jsonl *.jpg *.txt
+recursive-include tests *.py
+recursive-include benchmarks *.py
+recursive-include examples *.json *.md
+include .github/workflows/ci.yml
