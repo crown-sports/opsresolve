@@ -1,5 +1,7 @@
 # OpsResolve
 
+Version **0.2.0 (prerelease)** is distributed through [GitHub Releases](https://github.com/crown-sports/opsresolve/releases/tag/v0.2.0) as a wheel, source archive, and `SHA256SUMS`. Installation below pins this version; no PyPI release is required.
+
 **Turn an HTTP outage into a precise change and a tested recovery.**
 
 [简体中文](README.zh-CN.md) · [Setup](docs/usage.md) · [Algorithms](docs/algorithms.md) · [Experiments](docs/results.md)
@@ -28,7 +30,7 @@ an executable repair.
 Python 3.11+ on Linux or macOS. No API key, Docker cluster, or GPU is needed.
 
 ```bash
-git clone https://github.com/chrischen-coder/opsresolve.git
+git clone --branch v0.2.0 https://github.com/crown-sports/opsresolve.git
 cd opsresolve
 python3 -m venv .venv
 source .venv/bin/activate
