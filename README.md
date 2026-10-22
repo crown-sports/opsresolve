@@ -72,6 +72,23 @@ fields in applications that reload them without a restart. YAML, environment
 files, arbitrary code patches, SSH commands, and Kubernetes mutations are outside
 this release.
 
+## Compare a change against recorded traffic
+
+```bash
+opsresolve trace-compare examples/trace-regression/before.json examples/trace-regression/after.json --check
+opsresolve trace-compare before.json after.json --format json --output comparison.json
+```
+
+Match **service + operation**, inspect error-rate and p95 deltas, and see added,
+missing or undersampled operations. Defaults require at least 5 spans in each
+export; latency must increase by both 20% and 10 ms, while any error-rate increase
+is flagged. Override with `--min-spans`, `--latency-increase-pct`,
+`--latency-increase-ms`, and `--error-increase-pp` (percentage points).
+`--check` exits 1 for regressions **or incomplete coverage**, 0 for no observed
+regression, and 2 for invalid input. The bundled synthetic example deliberately
+fails the gate. Compare like-for-like sampling and workloads: these are observed
+samples, not a significance test or proof that a deployment caused the change.
+
 ## Useful mechanisms
 
 - **Bounded multi-fault diagnosis:** dependency failure propagation plus exact

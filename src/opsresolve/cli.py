@@ -13,6 +13,7 @@ from .domain import ContractError, Target, canonical
 from .journal import Journal
 from .lab import FaultLab
 from .repair import RepairTransaction
+from .trace_compare import compare_traces, comparison_markdown
 from .traces import analyze_traces, load_otlp, trace_markdown
 from .workflow import Investigation, markdown_report
 
@@ -89,6 +90,16 @@ def main() -> int:
     trace.add_argument("input", type=Path)
     trace.add_argument("--output", type=Path)
     trace.add_argument("--format", choices=("markdown", "json"), default="markdown")
+    compare = commands.add_parser("trace-compare", help="Compare before/after OTLP exports for regressions")
+    compare.add_argument("before", type=Path)
+    compare.add_argument("after", type=Path)
+    compare.add_argument("--min-spans", type=int, default=5)
+    compare.add_argument("--latency-increase-pct", type=float, default=20)
+    compare.add_argument("--latency-increase-ms", type=float, default=10)
+    compare.add_argument("--error-increase-pp", type=float, default=0)
+    compare.add_argument("--output", type=Path)
+    compare.add_argument("--format", choices=("markdown", "json"), default="markdown")
+    compare.add_argument("--check", action="store_true", help="Exit 1 on regressions or insufficient evidence")
     model_server = commands.add_parser("model-serve", help="Run an optional local Hugging Face model")
     model_server.add_argument("--path", type=Path, required=True)
     model_server.add_argument("--device", choices=("cuda", "cpu"), default="cuda")
@@ -180,6 +191,27 @@ def main() -> int:
                 args.output.write_text(content)
             else:
                 print(content)
+        elif args.command == "trace-compare":
+            if args.output and any(
+                args.output.resolve() == source.resolve() or (args.output.exists() and args.output.samefile(source))
+                for source in (args.before, args.after)
+            ):
+                raise ContractError("Comparison output must not overwrite an input export")
+            comparison = compare_traces(
+                load_otlp(args.before),
+                load_otlp(args.after),
+                min_spans=args.min_spans,
+                latency_increase_pct=args.latency_increase_pct,
+                latency_increase_ms=args.latency_increase_ms,
+                error_increase_pp=args.error_increase_pp,
+            )
+            content = canonical(comparison) if args.format == "json" else comparison_markdown(comparison)
+            if args.output:
+                args.output.write_text(content)
+            else:
+                print(content)
+            if args.check and comparison["state"] != "no_regression":
+                return 1
         elif args.command == "model-serve":
             from .model_server import create_model_app
 
