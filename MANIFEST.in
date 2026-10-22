@@ -1,3 +1,4 @@
+include CHANGELOG.md
 include README.md README.zh-CN.md LICENSE CONTRIBUTING.md
 recursive-include docs *.md *.json *.jsonl *.jpg *.txt
 recursive-include tests *.py

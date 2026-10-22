@@ -1,5 +1,7 @@
 # OpsResolve
 
+当前版本 **0.2.0（预发布）**，通过 [GitHub Releases](https://github.com/crown-sports/opsresolve/releases/tag/v0.2.0) 提供 wheel、源码归档和 `SHA256SUMS`；不依赖 PyPI 发布。安装说明固定到此版本。
+
 **网站或 API 出故障后，找出具体原因、改动具体配置，并确认业务真的恢复。**
 
 [English](README.md) · [接入方法](docs/usage.md) · [算法说明](docs/algorithms.md) · [实测记录](docs/results.md)
@@ -24,7 +26,7 @@
 需要 Linux 或 macOS、Python 3.11 以上。首次体验不需要模型 API Key、GPU 或 Kubernetes。
 
 ```bash
-git clone https://github.com/chrischen-coder/opsresolve.git
+git clone --branch v0.2.0 https://github.com/crown-sports/opsresolve.git
 cd opsresolve
 python3 -m venv .venv
 source .venv/bin/activate
