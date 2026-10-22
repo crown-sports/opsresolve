@@ -21,6 +21,20 @@
 再对五个服务各执行两轮业务请求。全部通过才显示“恢复已验证”；失败则恢复修改前的
 配置。如果定位到进程不可用或未覆盖的应用错误，它会列出需要人工处理的项目。
 
+## 什么时候适合用
+
+面向维护 HTTP 应用的开发者和运维人员。按你眼前要做的决定选择入口：
+
+| 现在要回答的问题 | 从哪里开始 | 最后拿到什么 |
+| --- | --- | --- |
+| 验证修复到底是什么流程？ | 下方内置恢复实验 | 两处精确改动、十次恢复检查和 `recovery.md` |
+| 这次变更是否让已记录的请求变差？ | 两份追踪文件的 `trace-compare` | 各操作的差异、覆盖缺口和自动门禁退出码 |
+| 我的接口为什么失败？ | 先检查 URL，再补服务清单 | 实际观测与候选解释；只修复已声明且支持的配置契约 |
+
+手工请求和修改配置也能解决同一故障；这里的价值是把证据、修改前提和恢复检查保留在
+同一流程里。现有监控继续负责采集与告警，本工具读取声明的目标或导出的记录，
+不承担托管监控后台的职责。[实现证据与后续优先级](docs/product.md)。
+
 ## 先完整体验一次
 
 需要 Linux 或 macOS、Python 3.11 以上。首次体验不需要模型 API Key、GPU 或 Kubernetes。
@@ -44,6 +58,10 @@ opsresolve serve --demo
 实验由五个真实 HTTP 进程和 SQLite 查询构成。也可以运行
 `opsresolve demo --report recovery.md`，在终端完成同一条恢复流程。
 
+**成功判据：** 终端最后显示 `Recovery: verified (10 business checks)`；
+`recovery.md` 中能看到两处配置改动和恢复证据。事件保存在 `~/.opsresolve`，
+临时应用进程会在命令结束时停止。
+
 ## 输入和输出
 
 | 输入 | 输出 | 如何使用 |
@@ -52,10 +70,31 @@ opsresolve serve --demo
 | 服务依赖清单 | 跨服务故障解释、备选原因、检查过程与事件报告 | `opsresolve serve --target target.json` |
 | 依赖清单与允许修复的 JSON 配置字段 | 精确修改、过期方案拒绝、恢复验证或回滚 | 真实目标需显式启用 `--allow-repair` |
 | OTLP JSON 或 Collector JSON-lines 追踪文件 | 已记录的错误起点候选、错误传播、服务调用关系和独占耗时 | 网页导入或 `opsresolve trace export.json` |
+| 两份可比较的 OTLP 导出 | 各操作回归、覆盖缺口和 CI 退出码 | `opsresolve trace-compare before.json after.json --check` |
 
 单个 URL 无法凭空发现整个应用架构；需要进一步定位时，添加依赖与配置契约。
 配置修复目前覆盖可热加载的、非敏感的已有 JSON 字段；YAML、环境变量文件、任意源码
 修改、Shell 命令和 Kubernetes 变更还未实现。
+
+第一次接自己的数据，先用已导出的追踪文件，或可安全发起业务探测的开发服务。
+确认服务名、依赖和预期响应符合应用后，再添加修复契约。内置实验验证的是自己的
+夹具流程，不会替你证明实际服务清单正确。具体步骤见[接入指南](docs/usage.md)。
+
+## 用已有追踪比较一次变更
+
+安装后，在仓库目录运行：
+
+```bash
+opsresolve trace-compare examples/trace-regression/before.json examples/trace-regression/after.json --check
+opsresolve trace-compare before.json after.json --format json --output comparison.json
+```
+
+首条命令使用合成夹具，故意得到 `regression` 并退出 1：p95 从 100 ms 升到
+180 ms，错误率从 0% 升到 10%。第二条用于自己的两份导出。按服务名和操作名匹配，
+默认两边各至少 5 个 span；延迟需同时超过 20% 和 10 ms，错误率任何增加都会标记。
+可用 `--min-spans`、`--latency-increase-pct`、`--latency-increase-ms`、
+`--error-increase-pp`（百分点）调整。`--check` 对回归或覆盖不足退出 1，未观察到回归
+退出 0，无效输入退出 2。应使用相近采样和负载；这不是统计显著性检验或部署因果证明。
 
 ## 算法与工程价值
 
