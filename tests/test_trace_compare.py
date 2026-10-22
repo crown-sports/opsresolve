@@ -111,3 +111,24 @@ def test_cli_never_overwrites_an_input_export(tmp_path: Path, alias):
     )
     assert result.returncode == 2 and "overwrite" in result.stderr
     assert before.read_text() == after.read_text() == payload
+
+
+def test_equal_error_budget_is_not_a_floating_point_regression():
+    report = compare_traces(sample(failed=3), sample(failed=4), error_increase_pp=10)
+    assert report["state"] == "no_regression"
+    assert report["operations"][0]["error_rate_delta_pp"] == 10
+    assert compare_traces(sample(failed=3), sample(failed=4), error_increase_pp=9.999)["state"] == "regression"
+
+
+def test_exact_nanosecond_latency_budget_and_one_nanosecond_excess():
+    before, after = sample(), sample()
+    for payload, end in ((before, 300_000), (after, 400_000)):
+        for item in payload["resourceSpans"][0]["scopeSpans"][0]["spans"]:
+            item["endTimeUnixNano"] = str(end)
+    options = {"latency_increase_ms": 0.1, "latency_increase_pct": 0}
+    report = compare_traces(before, after, **options)
+    assert report["state"] == "no_regression"
+    assert report["operations"][0]["p95_delta_ms"] == 0.1
+    for item in after["resourceSpans"][0]["scopeSpans"][0]["spans"]:
+        item["endTimeUnixNano"] = "400001"
+    assert compare_traces(before, after, **options)["state"] == "regression"

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
+from fractions import Fraction
 from typing import Any
 
 from .domain import ContractError
@@ -16,15 +17,20 @@ def _operations(report: dict[str, Any]) -> dict[tuple[str, str], dict[str, Any]]
         groups[span["service"], span["name"]].append(span)
     result = {}
     for key, spans in groups.items():
-        durations = sorted((span["end_ns"] - span["start_ns"]) / 1e6 for span in spans)
+        durations = sorted(span["end_ns"] - span["start_ns"] for span in spans)
         errors = sum(bool(span["failed"]) for span in spans)
         result[key] = {
             "spans": len(spans),
             "failed_spans": errors,
             "error_rate": errors / len(spans),
-            "p95_ms": durations[math.ceil(len(spans) * 0.95) - 1],
+            "p95_ns": durations[math.ceil(len(spans) * 0.95) - 1],
+            "p95_ms": durations[math.ceil(len(spans) * 0.95) - 1] / 1_000_000,
         }
     return result
+
+
+def _error_delta_pp(left: dict[str, Any], right: dict[str, Any]) -> Fraction:
+    return (Fraction(right["failed_spans"], right["spans"]) - Fraction(left["failed_spans"], left["spans"])) * 100
 
 
 def compare_traces(
@@ -53,10 +59,15 @@ def compare_traces(
         elif min(left["spans"], right["spans"]) < min_spans:
             status = "insufficient_samples"
         else:
-            delta = right["p95_ms"] - left["p95_ms"]
-            if delta > latency_increase_ms and delta > left["p95_ms"] * latency_increase_pct / 100:
+            # Compare exact counts and nanoseconds: a 30% -> 40% error rate
+            # must not exceed a 10 percentage-point budget due to float rounding.
+            delta_ns = right["p95_ns"] - left["p95_ns"]
+            if (
+                Fraction(delta_ns, 1_000_000) > Fraction(str(latency_increase_ms))
+                and delta_ns > left["p95_ns"] * Fraction(str(latency_increase_pct)) / 100
+            ):
                 reasons.append("p95_latency")
-            if (right["error_rate"] - left["error_rate"]) * 100 > error_increase_pp:
+            if _error_delta_pp(left, right) > Fraction(str(error_increase_pp)):
                 reasons.append("error_rate")
             status = "regression" if reasons else "no_regression"
         rows.append(
@@ -67,8 +78,8 @@ def compare_traces(
                 "reasons": reasons,
                 "before": left,
                 "after": right,
-                "p95_delta_ms": right["p95_ms"] - left["p95_ms"] if left and right else None,
-                "error_rate_delta_pp": (right["error_rate"] - left["error_rate"]) * 100 if left and right else None,
+                "p95_delta_ms": (right["p95_ns"] - left["p95_ns"]) / 1_000_000 if left and right else None,
+                "error_rate_delta_pp": float(_error_delta_pp(left, right)) if left and right else None,
             }
         )
     regressions = sum(row["status"] == "regression" for row in rows)
