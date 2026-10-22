@@ -25,6 +25,23 @@ recovery fails, it restores the original configuration bytes. A process outage o
 unknown application bug instead receives an operator action; it does not invent
 an executable repair.
 
+## Is this the right tool?
+
+Use it when you own an HTTP application and need a reviewable incident report
+or a before/after trace decision. Start with the input you already have:
+
+| Your immediate question | Start here | Decision or artifact |
+| --- | --- | --- |
+| “What does a verified repair look like?” | Bundled recovery demo below | Two exact changes and ten recovery checks in `recovery.md` |
+| “Did this change worsen recorded traffic?” | `trace-compare` with two exports | Operation-level deltas and a gate that also rejects incomplete coverage |
+| “Why is my endpoint failing?” | URL triage, then a target manifest | Observations and candidate explanations; repair only where you declared a supported contract |
+
+Manual HTTP checks and configuration edits can solve the same incident. This
+workbench keeps their evidence, patch preconditions and recovery checks together.
+Keep your existing monitoring and tracing system for collection and alerts;
+OpsResolve consumes declared targets or exported records. It is not a hosted
+observability backend. [Implementation evidence and priorities](docs/product.md).
+
 ## Try a complete recovery
 
 Python 3.11+ on Linux or macOS. No API key, Docker cluster, or GPU is needed.
@@ -49,7 +66,9 @@ For a terminal demonstration:
 opsresolve demo --report recovery.md
 ```
 
-This prints a verified recovery and preserves the incident in `~/.opsresolve`.
+**Success:** the terminal ends with `Recovery: verified (10 business checks)`;
+`recovery.md` contains the two configuration changes and their recovery evidence.
+The incident is preserved in `~/.opsresolve`.
 The disposable application processes are stopped when the command exits.
 
 ## Use it on your application
@@ -60,6 +79,7 @@ The disposable application processes are stopped when the command exits.
 | Target manifest | Dependency diagnosis, alternative fault sets, selected checks, a report | `opsresolve serve --target target.json` |
 | Manifest + repair-enabled JSON contracts | Reviewable field changes, stale-plan checks, tested recovery or rollback | Explicit `--allow-repair` for real targets |
 | OTLP JSON / collector JSON-lines export | Recorded error-origin candidates, propagation, service edges, exclusive span time | Import in UI or `opsresolve trace export.json` |
+| Two comparable OTLP exports | Per-operation regressions, coverage gaps and a CI exit status | `opsresolve trace-compare before.json after.json --check` |
 
 ```bash
 opsresolve init --url http://127.0.0.1:3000/ --output target.json
@@ -73,6 +93,11 @@ business checks. Automatic repair currently supports nonsensitive existing JSON
 fields in applications that reload them without a restart. YAML, environment
 files, arbitrary code patches, SSH commands, and Kubernetes mutations are outside
 this release.
+
+For a first real trial, use an exported trace file or a development service with
+a business URL you can safely probe. Check that names, dependencies and expected
+responses describe that application before adding repair contracts. The local
+demo proves the workflow on its fixtures; it does not validate your manifest.
 
 ## Compare a change against recorded traffic
 
