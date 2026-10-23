@@ -1,39 +1,35 @@
-# Product fit and evidence
+# Reading a diagnosis and a trace comparison
 
-The intended user owns an HTTP application and must decide what to investigate,
-whether a declared repair recovered it, or whether two trace samples reveal a
-regression. These are use-case hypotheses drawn from the implemented workflow;
-there are no published user interviews or adoption measurements behind them.
+## Recovery means the business request works
 
-## What is implemented
+A green health endpoint can coexist with a broken checkout. The storefront demo
+checks the request users make, repairs the gateway's upstream URL, then discovers
+the catalog's database fault. Each proposed patch includes its original value
+and file hash. Applying a stale plan fails; an unsuccessful recovery check
+triggers rollback. [Recovery tests](../tests/test_live_recovery.py).
 
-| Advantage over an ad hoc workflow | Evidence you can inspect | What it does not establish |
-| --- | --- | --- |
-| Keep simultaneous fault candidates instead of stopping at the first symptom | [Diagnosis tests](../tests/test_diagnosis.py), [three-topology experiments](results.md) | Accuracy on unknown production faults |
-| Join exact patches, stale-plan rejection and business recovery checks | [Live recovery tests](../tests/test_live_recovery.py), [interruption tests](../tests/test_interruption.py) | Arbitrary repair support or globally atomic multi-file changes |
-| Compare recorded operations with explicit missing/undersampled states | [Trace comparison tests](../tests/test_trace_compare.py), [synthetic exports](../examples/trace-regression/before.json) | Statistical significance or deployment causality |
+Keep the target manifest close to the service configuration. It tells the tool
+which dependencies, probes and JSON fields it may use. A URL alone gives endpoint
+triage; it does not discover hidden services or authorize repairs.
+[Target setup and repair contracts](usage.md).
 
-These are reproducible integration advantages using established algorithms.
-The code is MIT licensed and can be copied. There is no evidence here of an
-exclusive algorithm, proprietary incident corpus or established commercial moat.
+## Read trace comparisons as a change in the sample
 
-## Next evidence to earn
+`trace-compare` groups spans by service and operation name. Defaults require
+five spans on each side. A latency regression must exceed **both 20% and 10 ms**;
+any increase in error rate also fails. Missing or undersampled operations are
+reported separately and fail `--check` rather than disappearing from the report.
+Run `opsresolve trace-compare --help` to adjust thresholds.
 
-1. **First-use fit:** observe application owners completing the demo and importing
-   their own sanitized trace. Record completion/failure and the decision they
-   could make, including unsupported inputs. No completion rate is measured yet.
-2. **Coverage:** collect consented, sanitized incident reproductions with known
-   outcomes, including ambiguous and failed repairs. Broaden contracts only when
-   their preconditions and recovery checks can be tested. A maintained corpus
-   could become a cumulative asset; the current development fixtures are not it.
-3. **Operational trust:** measure setup effort and false regression alerts under
-   real sampling changes before promising deployment gating or time savings.
+The bundled sample changes p95 from **100 to 180 ms** and errors from **0% to 10%**.
+Its nonzero exit is expected. Use exports with comparable traffic and sampling;
+a comparison shows a recorded change, not its cause or statistical significance.
+[Comparison tests](../tests/test_trace_compare.py).
 
-For a trial, begin with [the README demo](../README.md#try-a-complete-recovery),
-then a read-only target described in [usage](usage.md). Keep monitoring for
-collection and alerts. Repair requires explicit contracts and operator review.
+## Inspect the implementation
 
-## Version availability
+- [Diagnosis](algorithms.md): preserve multiple fault candidates and select probes.
+- [Experiments](results.md): topology fixtures, model comparisons and failures.
+- [Interruption handling](../tests/test_interruption.py): stop safely during repair.
 
-This document was added after v0.2.0 and is available on main; all demo commands
-above already work in v0.2.0. Existing release archives are unchanged.
+The commands work in v0.2.0. This guide and the shorter README are maintained on main.
