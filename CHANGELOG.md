@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.1 — 2026-10-23 (prerelease)
 
 Refuse CLI report paths that would overwrite a trace export, target manifest or incident database, including symlink and hardlink aliases. Create missing report directories and write UTF-8 exports.
 
