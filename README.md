@@ -2,7 +2,7 @@
 
 Find the configuration behind an HTTP failure, review the changes, and check that business requests recover.
 
-[中文](README.zh-CN.md) · [Setup](docs/usage.md) · [v0.2.0 prerelease](https://github.com/crown-sports/opsresolve/releases/tag/v0.2.0)
+[中文](README.zh-CN.md) · [Setup](docs/usage.md) · [v0.2.1 prerelease](https://github.com/crown-sports/opsresolve/releases/tag/v0.2.1)
 
 ![Storefront demo after two configuration fixes: HTTP 200 and ten successful recovery checks](docs/assets/workbench.jpg)
 
@@ -18,7 +18,7 @@ recovery result in an incident report.
 Python 3.11+ on Linux or macOS. No service account or model is needed.
 
 ```sh
-git clone --branch v0.2.0 https://github.com/crown-sports/opsresolve.git
+git clone --branch v0.2.1 https://github.com/crown-sports/opsresolve.git
 cd opsresolve
 python3 -m venv .venv
 source .venv/bin/activate

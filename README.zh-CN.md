@@ -2,7 +2,7 @@
 
 接口报错了，找出有问题的配置，审阅具体改动，再确认业务请求恢复。
 
-[English](README.md) · [接入方法](docs/usage.md) · [v0.2.0 预发布](https://github.com/crown-sports/opsresolve/releases/tag/v0.2.0)
+[English](README.md) · [接入方法](docs/usage.md) · [v0.2.1 预发布](https://github.com/crown-sports/opsresolve/releases/tag/v0.2.1)
 
 ![商城演示修复两处配置后，接口返回 HTTP 200，十次恢复检查全部通过](docs/assets/workbench.zh.jpg)
 
@@ -17,7 +17,7 @@
 需要 Linux 或 macOS、Python 3.11 以上，不用接服务账号或模型。
 
 ```sh
-git clone --branch v0.2.0 https://github.com/crown-sports/opsresolve.git
+git clone --branch v0.2.1 https://github.com/crown-sports/opsresolve.git
 cd opsresolve
 python3 -m venv .venv
 source .venv/bin/activate

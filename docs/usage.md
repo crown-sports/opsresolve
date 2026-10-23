@@ -174,3 +174,15 @@ Incidents and event chains persist in `~/.opsresolve/incidents.sqlite3`; changin
 the state directory creates a separate history. Demo workspaces are disposable,
 but their incident reports remain readable after processes stop. Event-chain
 hashes detect changed links; database owners can replace and rehash records.
+
+## Saving reports on main
+
+The next patch protects your inputs when saving a report. An output path cannot
+refer to its input trace, target manifest or incident database, even through a
+symlink or hardlink. Choose a separate report path; new parent directories are
+created automatically. Existing report files can still be updated at the path
+you specify. These changes are on main and are not part of v0.2.0.
+
+```sh
+opsresolve trace collector-export.json --output reports/incident/trace-report.md
+```

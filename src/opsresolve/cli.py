@@ -41,6 +41,19 @@ def display(record: dict[str, Any]) -> None:
         print(f"Recovery: {record['repair']['state']} ({len(record['repair']['checks'])} business checks)")
 
 
+def check_output_path(output: Path, protected: tuple[Path, ...]) -> None:
+    """Refuse aliases of source files or the incident journal before doing any work."""
+    for source in protected:
+        if output.resolve() == source.resolve() or (output.exists() and source.exists() and output.samefile(source)):
+            raise ContractError("Output must not overwrite an input file or the incident journal; choose another path")
+
+
+def write_output(output: Path, content: str) -> None:
+    """Allow a new report folder and consistently encode portable text exports."""
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(content, encoding="utf-8")
+
+
 def main() -> int:
     """Run the same bounded workflows available through the browser workbench."""
     parser = argparse.ArgumentParser(prog="opsresolve", description="Investigate service failures and verify recovery")
@@ -106,6 +119,16 @@ def main() -> int:
     model_server.add_argument("--port", type=int, default=8766)
     args = parser.parse_args()
     try:
+        output = getattr(args, "report", None) or getattr(args, "output", None)
+        if output is not None:
+            protected = tuple(
+                value
+                for name in ("target", "input", "before", "after")
+                if isinstance(value := getattr(args, name, None), Path)
+            )
+            if hasattr(args, "state"):
+                protected += (args.state / "incidents.sqlite3",)
+            check_output_path(output, protected)
         if args.command == "init":
             manifest = {
                 "version": 1,
@@ -116,7 +139,7 @@ def main() -> int:
             target = Target.from_dict(manifest, args.output.resolve().parent)
             if args.output.exists():
                 raise ContractError("Output already exists; choose a new manifest path")
-            args.output.write_text(canonical(target.to_dict()) + "\n")
+            write_output(args.output, canonical(target.to_dict()) + "\n")
             print(f"Created {args.output.resolve()}; run opsresolve diagnose {args.output}")
         elif args.command == "diagnose":
             target = Target.load(args.target)
@@ -131,7 +154,7 @@ def main() -> int:
                 journal.save(record)
             display(record)
             if args.report:
-                args.report.write_text(markdown_report(record))
+                write_output(args.report, markdown_report(record))
             if record.get("plan", {}).get("can_apply"):
                 print(
                     f"Review/apply: opsresolve repair {args.target} --incident {incident_id} "
@@ -168,7 +191,7 @@ def main() -> int:
                 record = journal.get(incident_id)
                 display(record)
                 if args.report:
-                    args.report.write_text(markdown_report(record))
+                    write_output(args.report, markdown_report(record))
         elif args.command == "serve":
             from .web import create_app
 
@@ -181,22 +204,17 @@ def main() -> int:
             record = Journal(args.state / "incidents.sqlite3").get(args.incident)
             content = canonical(record) if args.format == "json" else markdown_report(record)
             if args.output:
-                args.output.write_text(content)
+                write_output(args.output, content)
             else:
                 print(content)
         elif args.command == "trace":
             analyzed = analyze_traces(load_otlp(args.input))
             content = canonical(analyzed) if args.format == "json" else trace_markdown(analyzed)
             if args.output:
-                args.output.write_text(content)
+                write_output(args.output, content)
             else:
                 print(content)
         elif args.command == "trace-compare":
-            if args.output and any(
-                args.output.resolve() == source.resolve() or (args.output.exists() and args.output.samefile(source))
-                for source in (args.before, args.after)
-            ):
-                raise ContractError("Comparison output must not overwrite an input export")
             comparison = compare_traces(
                 load_otlp(args.before),
                 load_otlp(args.after),
@@ -207,7 +225,7 @@ def main() -> int:
             )
             content = canonical(comparison) if args.format == "json" else comparison_markdown(comparison)
             if args.output:
-                args.output.write_text(content)
+                write_output(args.output, content)
             else:
                 print(content)
             if args.check and comparison["state"] != "no_regression":
